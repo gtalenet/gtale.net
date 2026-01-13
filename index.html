@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Coming Soon</title>
+    <link href="https://fonts.googleapis.com/css2?family=Kanit:ital,wght@1,900&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body, html { height: 100%; width: 100%; overflow: hidden; background: #e0e0e0; }
+
+        /* Shared Layer Styles */
+        .layer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px; /* Prevents text hitting edges on mobile */
+            
+            /* GTA Style Font Settings */
+            font-family: 'Kanit', sans-serif;
+            font-style: italic;
+            /* Clamp font size: min 3rem, preferred 10vw, max 8rem */
+            font-size: clamp(3rem, 10vw, 8rem); 
+            line-height: 1;
+            text-align: center;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            
+            cursor: none; /* Hide default cursor */
+            user-select: none;
+            pointer-events: none; /* Let mouse pass through to body listeners */
+        }
+
+        /* --- Bottom Layer (The Revealed Light Theme) --- */
+        #light-layer {
+            background-color: #e0e0e0; 
+            color: #1a1a1a;
+            z-index: 1;
+        }
+
+        /* --- Top Layer (The Dark Theme) --- */
+        #dark-layer {
+            background-color: #1b1b1b;
+            color: #d3d3d3; /* Very Light Gray */
+            z-index: 2;
+
+            /* CSS Variables updated by JS */
+            --x: 50%;
+            --y: 50%;
+            --size: 0px; /* Starts at 0 */
+
+            /* Hard-edge mask */
+            -webkit-mask-image: radial-gradient(circle var(--size) at var(--x) var(--y), transparent 100%, black 100%);
+            mask-image: radial-gradient(circle var(--size) at var(--x) var(--y), transparent 100%, black 100%);
+        }
+
+        canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            z-index: -1;
+            opacity: 0.3; /* Subtle particles */
+        }
+    </style>
+</head>
+<body>
+
+    <div id="light-layer" class="layer">
+        Coming Soon
+    </div>
+
+    <div id="dark-layer" class="layer">
+        <canvas id="particleCanvas"></canvas>
+        Coming Soon
+    </div>
+
+    <script>
+        // --- Configuration ---
+        const darkLayer = document.getElementById('dark-layer');
+        const MAX_SIZE = 250; // Max size of the spotlight
+        
+        // State variables for smooth animation
+        let mouseX = window.innerWidth / 2;
+        let mouseY = window.innerHeight / 2;
+        let currentSize = 0;
+        let targetSize = 0; // 0 = hidden, 250 = visible
+
+        // --- Mouse/Touch Event Listeners ---
+        function handleMove(x, y) {
+            mouseX = x;
+            mouseY = y;
+            targetSize = MAX_SIZE; // Expand when moving
+        }
+
+        window.addEventListener('mousemove', e => handleMove(e.clientX, e.clientY));
+        window.addEventListener('touchmove', e => handleMove(e.touches[0].clientX, e.touches[0].clientY));
+
+        // Shrink circle when mouse leaves or touch ends
+        window.addEventListener('mouseleave', () => targetSize = 0);
+        window.addEventListener('touchend', () => targetSize = 0);
+
+        // --- Animation Loop (Smooths the movement and sizing) ---
+        function animateSpotlight() {
+            // Linear Interpolation (Lerp) for smoothness
+            // Move currentSize 10% closer to targetSize every frame
+            currentSize += (targetSize - currentSize) * 0.1;
+
+            // Apply to CSS
+            darkLayer.style.setProperty('--x', mouseX + 'px');
+            darkLayer.style.setProperty('--y', mouseY + 'px');
+            darkLayer.style.setProperty('--size', currentSize + 'px');
+
+            requestAnimationFrame(animateSpotlight);
+        }
+        animateSpotlight();
+
+
+        // --- Particle System (Small & Subtle) ---
+        const canvas = document.getElementById('particleCanvas');
+        const ctx = canvas.getContext('2d');
+        let particles = [];
+
+        function resizeCanvas() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+
+        class Particle {
+            constructor() {
+                this.reset();
+            }
+            reset() {
+                this.x = Math.random() * canvas.width;
+                this.y = Math.random() * canvas.height;
+                this.vx = (Math.random() - 0.5) * 0.5; 
+                this.vy = (Math.random() - 0.5) * 0.5;
+                this.size = Math.random() * 1.5 + 0.5; // Very small: 0.5px to 2px
+                this.alpha = Math.random() * 0.5 + 0.1;
+            }
+            update() {
+                this.x += this.vx;
+                this.y += this.vy;
+                
+                // Wrap around screen
+                if (this.x < 0) this.x = canvas.width;
+                if (this.x > canvas.width) this.x = 0;
+                if (this.y < 0) this.y = canvas.height;
+                if (this.y > canvas.height) this.y = 0;
+            }
+            draw() {
+                ctx.fillStyle = `rgba(211, 211, 211, ${this.alpha})`;
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        }
+
+        // Create 60 particles
+        for (let i = 0; i < 60; i++) particles.push(new Particle());
+
+        function animateParticles() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            particles.forEach(p => {
+                p.update();
+                p.draw();
+            });
+            requestAnimationFrame(animateParticles);
+        }
+        animateParticles();
+
+    </script>
+</body>
+</html>
